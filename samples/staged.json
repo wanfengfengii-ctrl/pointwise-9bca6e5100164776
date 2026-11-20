@@ -1,0 +1,19 @@
+{
+  "job_id": "北汊补录日批",
+  "first": {
+    "name": "甲卷",
+    "available": 1,
+    "records": [
+      {"key": "a", "version": 2, "value": 7, "deleted": false, "origin": "甲站/a"},
+      {"key": "b", "version": 1, "value": 11, "deleted": false, "origin": "甲站/b"}
+    ]
+  },
+  "second": {
+    "name": "乙卷",
+    "available": 1,
+    "records": [
+      {"key": "a", "version": 1, "value": 5, "deleted": false, "origin": "乙站/a"},
+      {"key": "a", "version": 3, "value": null, "deleted": true, "origin": "乙站/a-撤回"}
+    ]
+  }
+}

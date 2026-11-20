@@ -1,0 +1,21 @@
+{
+  "job_id": "北汊日批",
+  "first": {
+    "name": "甲卷",
+    "available": 2,
+    "records": [
+      {"key": "a", "version": 2, "value": 7, "deleted": false, "origin": "甲站/a"},
+      {"key": "b", "version": 2, "value": 11, "deleted": false, "origin": "甲站/b"},
+      {"key": "c", "version": 1, "value": 4, "deleted": false, "origin": "甲站/c"}
+    ]
+  },
+  "second": {
+    "name": "乙卷",
+    "available": 2,
+    "records": [
+      {"key": "a", "version": 1, "value": 5, "deleted": false, "origin": "乙站/a"},
+      {"key": "b", "version": 2, "value": 13, "deleted": false, "origin": "乙站/b"},
+      {"key": "c", "version": 2, "value": null, "deleted": true, "origin": "乙站/c-撤回"}
+    ]
+  }
+}

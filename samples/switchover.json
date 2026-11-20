@@ -1,0 +1,28 @@
+{
+  "first": {
+    "name": "甲卷",
+    "available": null,
+    "records": [
+      {"key": "a", "version": 2, "value": 7, "deleted": false, "origin": "甲/a"},
+      {"key": "b", "version": 4, "value": 40, "deleted": false, "origin": "甲/b"}
+    ]
+  },
+  "old": {
+    "name": "乙卷",
+    "available": 2,
+    "records": [
+      {"key": "a", "version": 1, "value": 5, "deleted": false, "origin": "乙/a"},
+      {"key": "b", "version": 2, "value": 9, "deleted": false, "origin": "乙/b-先到"},
+      {"key": "b", "version": 3, "value": 11, "deleted": false, "origin": "乙/b-保全"},
+      {"key": "b", "version": 5, "value": 50, "deleted": false, "origin": "乙/b-迟到"}
+    ]
+  },
+  "replacement": {
+    "name": "乙补卷",
+    "available": 1,
+    "records": [
+      {"key": "b", "version": 4, "value": 13, "deleted": false, "origin": "乙补/b"},
+      {"key": "c", "version": 1, "value": 2, "deleted": false, "origin": "乙补/c"}
+    ]
+  }
+}
