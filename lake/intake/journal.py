@@ -47,11 +47,39 @@ class CustodyJournal:
         ''')
 
     def _require_bound_volume(self, job_id: JobId, volume_id: VolumeId):
+        if not self.is_job_volume(job_id, volume_id):
+            raise ValueError(f'volume {volume_id} is outside job {job_id!r}')
+
+    def is_job_volume(self, job_id: JobId, volume_id: VolumeId) -> bool:
         bound = self.db.execute('''
             SELECT 1 FROM jobs WHERE job_id = ? AND ? IN (first_volume, second_volume)
-        ''', (job_id, volume_id)).fetchone()
-        if bound is None:
-            raise ValueError(f'volume {volume_id} is outside job {job_id!r}')
+            UNION ALL
+            SELECT 1 FROM switches WHERE job_id = ? AND replacement_volume = ?
+        ''', (job_id, volume_id, job_id, volume_id)).fetchone()
+        return bound is not None
+
+    def continuous_custody_count(self, volume_id: VolumeId) -> int:
+        """Positions 0..n-1 durably retained for this physical volume, whoever saved them."""
+        rows = self.db.execute(
+            'SELECT position FROM custody WHERE volume_id = ? ORDER BY position', (volume_id,)
+        )
+        covered = 0
+        for row in rows:
+            if row['position'] != covered:
+                break
+            covered += 1
+        return covered
+
+    def has_formal_end(self, volume_id: VolumeId) -> bool:
+        return self._end_position(volume_id) is not None
+
+    def read_prefix(self, job_id: JobId, volume_id: VolumeId,
+                    cutoff: int) -> tuple[CustodyEntry, ...]:
+        self._require_bound_volume(job_id, volume_id)
+        rows = self.db.execute('''
+            SELECT * FROM custody WHERE volume_id = ? AND position < ? ORDER BY position
+        ''', (volume_id, cutoff))
+        return tuple(_entry(row) for row in rows)
 
     def save_record(self, job_id: JobId, slot: SourceSlot) -> CustodyEntry:
         self._require_bound_volume(job_id, slot.volume_id)

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from lake.intake.frontier import VolumeEvidence, build_volume_evidence
-from lake.intake.journal import CustodyJournal
+from lake.intake.journal import CustodyEntry, CustodyJournal
 from lake.intake.recovery import recover_pending_confirmations
 from lake.registry.identity import JobId, VolumeId
 from lake.source.cursor import PollResult
@@ -43,3 +43,15 @@ class Takeover:
         if polled.position > len(evidence.entries):
             raise RetryableSource(f'volume {volume_id} advanced beyond continuous custody')
         return IntakeProgress(evidence, polled)
+
+    def advance_replacement(self, job_id: JobId, volume_id: VolumeId) -> IntakeProgress:
+        # The replacement follows the same source protocol; it is simply outside the original job.
+        return self.advance_volume(job_id, volume_id)
+
+    def retained_view(self, job_id: JobId, volume_id: VolumeId,
+                      cutoff: int) -> tuple[CustodyEntry, ...]:
+        # A retired side is never polled again: only already retained slots below the cutoff count.
+        entries = self.journal.read_prefix(job_id, volume_id, cutoff)
+        if len(entries) != cutoff:
+            raise RetryableSource(f'retained prefix for volume {volume_id} is not continuous')
+        return entries

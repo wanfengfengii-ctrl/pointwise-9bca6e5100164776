@@ -33,6 +33,10 @@ with Lake('day.sqlite', 'retired.sqlite') as lake:
 - `read(job_id, position=None)` 从起点或保存的 `ReadPosition(job_id, offset)` 取得其后已发布的 `rows`、`next_position` 和 `finished`。每行附原卷登记号、从零开始的原位置和原出处标识。位置按可见行计数，空页保持原位置。未知归并抛出 `KeyError`，异归并位置或越界抛出 `ValueError`。
 - `balance(job_id)` 尚未完卷返回 `None`，完卷返回 `Balance(row_count, total)`。每一条固定明细都参与计数及求和，多个键相同的读值分别入账。空结果为 `Balance(0, 0)`。
 
+## 退役卷换卷
+
+- `switch_volume(job_id, request_id, side, expected_old_volume, expected_next, replacement_volume)` 为未完卷日批的一侧（`side` 为 0 或 1）申请单次换卷，返回不可变 `SwitchReceipt`。它核对原卷自物理零槽起在湖库连续保全的槽数（`expected_next` 即排他截点，0 表示尚无保全槽），截点内原件继续参选；补卷须可读物理零槽或正式空卷尾，暂缺抛 `RetryableSource`，且补卷首键不得低于保留尾键。切换与首执在同一事务提交，`before_switch_commit` 抛 `PublicationRejected` 时整体回滚。同号同参重开重领原首执，异参、过时截点或二次换卷抛 `ValueError`。换卷后 `step`、`read`、`balance` 接口不变：旧确认仍按原物理卷与确认号查询，胜项交付实际物理卷号、零基槽位和原出处，领取游标与已发布明细保持不变。业务细则见 `SWITCHOVER.md`，核验与演示见 `python3 -B switch_examples.py verify` 和 `python3 -B switch_examples.py demo`。
+
 登记时可用 `available=整数` 提供初始可见槽数，并保留正式卷尾。供件方通过 `lake.source.release(volume_id, count)` 增加可用槽数，通过 `lake.source.release(volume_id)` 放开剩余槽和正式卷尾。供件进度随同源库重开恢复。正常登记默认开放所有槽和卷尾。一次归并只推进所绑定的两卷。
 
 ## 推进与重开

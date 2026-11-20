@@ -20,6 +20,8 @@ from lake.source.receipts import RetryableSource as RetryableSource
 from lake.source.records import SourceRecord as SourceRecord
 from lake.source.storage import SourceStore
 from lake.source.volume import SourceVolume
+from lake.switch import SwitchReceipt as SwitchReceipt
+from lake.switch import Switchboard
 
 
 class Lake:
@@ -45,6 +47,9 @@ class Lake:
             self.catalog = Catalog(self.ledger, self.source)
             self.requests = RequestRegistry(self.catalog, self.ledger)
             self.takeover = Takeover(self.source, self.journal)
+            self.switchboard = Switchboard(self.db, self.ledger, self.journal, self.source,
+                                           before_switch_commit)
+            self.switchboard.initialize()
             self._connections = opening.pop_all()
 
     def register(self, name, records, *, available=None):
@@ -53,8 +58,13 @@ class Lake:
     def start(self, job_id, first, second):
         return self.requests.start(job_id, first, second)
 
+    def switch_volume(self, job_id, request_id, side, expected_old_volume, expected_next,
+                      replacement_volume):
+        return self.switchboard.switch_volume(job_id, request_id, side, expected_old_volume,
+                                              expected_next, replacement_volume)
+
     def step(self, job_id):
-        return step(self.requests, self.takeover, self.publisher, job_id)
+        return step(self.requests, self.takeover, self.publisher, self.switchboard, job_id)
 
     def read(self, job_id, position=None):
         return read(self.ledger, self.publisher, job_id, position)

@@ -2,9 +2,8 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 from lake.merge.eligibility import VolumePair, can_close_key, can_finish_job
-from lake.merge.winners import Winner, choose_winner
+from lake.merge.winners import Winner, choose_side_winner
 from lake.registry.requests import JobBinding
-from lake.source.records import SourceSlot
 
 
 @dataclass(frozen=True)
@@ -21,22 +20,22 @@ class PublicationPlan:
 
 
 def build_publication_plan(binding: JobBinding, base_key: str | None,
-                           evidence: VolumePair) -> PublicationPlan:
-    if tuple(volume.volume_id for volume in evidence) != binding.volumes:
-        raise ValueError('publication evidence must follow the bound volume order')
-    grouped: dict[str, list[SourceSlot]] = defaultdict(list)
-    for volume in evidence:
-        for entry in volume.entries:
-            key = entry.slot.record.key
+                           sides: VolumePair) -> PublicationPlan:
+    if tuple(side.side_index for side in sides) != (0, 1):
+        raise ValueError('publication evidence must follow the bound logical side order')
+    grouped: dict[str, list] = defaultdict(list)
+    for side in sides:
+        for candidate in side.candidates:
+            key = candidate.key
             if base_key is None or key > base_key:
-                grouped[key].append(entry.slot)
+                grouped[key].append(candidate)
 
     decisions = []
     for key in sorted(grouped):
-        if not can_close_key(key, evidence):
+        if not can_close_key(key, sides):
             break
-        winner = choose_winner(grouped[key], binding.policy, binding.volumes)
+        winner = choose_side_winner(grouped[key])
         decisions.append(KeyDecision(key, winner))
 
-    finished = can_finish_job(evidence, len(grouped) - len(decisions))
+    finished = can_finish_job(sides, len(grouped) - len(decisions))
     return PublicationPlan(base_key, tuple(decisions), finished)
